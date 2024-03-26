@@ -1,0 +1,160 @@
+---
+title: "Du Bois challenge 2024 -  week 7"
+author: "Yann Say"
+
+date: today
+license: "CC BY"
+keywords: 
+  - Du Bois challenge 2024
+  - Data Visualization
+  - R programming
+  - Quarto
+
+format: 
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: true
+    warning: false
+---
+
+# Intro
+
+This is my repository for the [Du Bois challenge 2024](https://github.com/ajstarks/dubois-data-portraits/blob/master/challenge/2024/README.md) from the Data Visualization Society.
+
+# Week 7
+
+## Replica
+
+```{r}
+library(renv)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(forcats)
+library(showtext)
+library(plotly)
+
+# Reading data
+dubois_week7_raw <- read.csv("01 - Inputs/week 7/data.csv", header = F)
+
+# Composition
+dubois_week7 <- dubois_week7_raw
+names(dubois_week7) <- c("country", "percentages")
+dubois_week7 <- dubois_week7 %>%
+  mutate(
+    color = if_else(country == "Negroes, U.S.A.", "red", "green"),
+    sorted_country = fct_reorder(country, percentages),
+    percentages = round(percentages),
+    percentages_text = paste0(percentages, "%")
+  )
+
+# Data viz helpers
+dubois_week7_palette <- c(red = "#dc143c", green = "#00aa00")
+alternative_week7_palette <- c(red = "#EE5859", green = "#209EA0")
+
+dubois_theme <- function() {
+  theme_minimal() +
+    theme(
+      text = element_text(family = "Public Sans"),
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5),
+      panel.grid = element_blank()
+    )
+}
+font_add_google(name = "Public Sans")
+
+# Outputs
+replica_week7 <- dubois_week7 |>
+  ggplot(aes(x = sorted_country, y = percentages, fill = color)) +
+  geom_col() +
+  coord_flip() +
+  guides(fill = "none") +
+  scale_fill_manual(values = dubois_week7_palette) +
+  labs(
+    x = "",
+    y = "",
+    title = str_wrap("Illiteracy of the American Negroes compared with that of other nations.", 60),
+    subtitle = str_wrap("Proportion d'illetrrés parmis les Nègres Americains comparée à celle des autres nations.", 60)
+  ) +
+  dubois_theme() +
+  theme(axis.text.x = element_blank())
+```
+
+::: {#fig-week7 layout="[50,50]"}
+![Original week 7](01%20-%20Inputs/week%207/original-plate-47.jpg){#fig-original_week7}
+
+```{r #fig-mine_week7}
+#| echo: false
+#| fig-height: 9
+#| fig-cap: My version
+
+replica_week7
+```
+
+Week 7
+:::
+
+## Alternative
+
+My proposed changes:
+
+- Adding the percentages to have a reference, without an axis or the numbers, it is only possible to relatively see the difference, e.g. top 3 have a higher illiteracy but by how much?
+- Adding a legend of the bottom axis.
+- Left alignment of the titles.
+- Changing color palette to a more colorblind friendly one.
+- In the interactive graph, only the percentages for Negroes, U.S.A. is shown to highlight it. User can hover if s/he wants to compare.
+
+### Alternative - static
+
+```{r #fig-alternative_week7}
+#| fig-cap: Alternative
+alternative_week7 <- dubois_week7 |>
+  ggplot(aes(x = sorted_country, y = percentages, fill = color)) +
+  geom_col() +
+  geom_text(aes(label = percentages_text), nudge_y = 2, size = 3) +
+  coord_flip() +
+  guides(fill = "none") +
+  scale_fill_manual(values = alternative_week7_palette) +
+  labs(
+    x = "",
+    y = "Proportion of illiteracy",
+    title = str_wrap("Proportion of illiteracy of the American Negroes compared to other nations.", 70),
+    subtitle = str_wrap("Proportion d'illetrrés parmis les Nègres Américains comparée à celle des autres nations.", 70)
+  ) +
+  theme_minimal() +
+  theme(text = element_text(family = "Public Sans"))
+alternative_week7
+```
+
+### Alternative - interactive
+
+```{r #fig-alternativeb_week7}
+#| fig-cap: Alternative interactive
+#| output: asis
+
+alternative_week7b <- dubois_week7 |>
+  ggplot(aes(x = sorted_country, y = percentages, fill = color, text = percentages_text)) +
+  geom_col() +
+  geom_text(aes(x = "Negroes, U.S.A.", y = 60, label = "57%")) +
+  coord_flip() +
+  guides(fill = "none") +
+  scale_fill_manual(values = alternative_week7_palette) +
+  labs(
+    x = "",
+    y = "Proportion of illiteracy"
+  ) +
+  theme_minimal() +
+  theme(text = element_text(family = "Public Sans"))
+alternative_week7b_ly <- ggplotly(alternative_week7b, tooltip = "text") |>
+  layout(title = list(text = paste0("Proportion of illiteracy of the American Negroes compared to other nations.",
+                                    "<br>",
+                                    "<sup>",
+                                    "Proportion d'illetrrés parmis les Nègres Américains comparée à celle des autres nations."),
+                      x = 0.1))
+
+alternative_week7b_ly$x$layout$margin$t <- 30
+alternative_week7b_ly
+```
+
+
